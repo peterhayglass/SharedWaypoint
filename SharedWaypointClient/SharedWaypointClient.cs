@@ -17,6 +17,8 @@ namespace SharedWaypointClient {
         private Menu menu;
         private MenuItem unsub;
         private MenuItem pubsMenuItem;
+        private MenuCheckboxItem box;
+        private MenuCheckboxItem togglePub;
 
         public SharedWaypointClient() {
             EventHandlers["onClientResourceStart"] += new Action<string>(OnClientResourceStart);
@@ -24,7 +26,7 @@ namespace SharedWaypointClient {
             EventHandlers["SharedWaypoint:SetWaypoint"] += new Action<Vector3>(SetWaypoint);
             EventHandlers["SharedWaypoint:ClearWaypoint"] += new Action(ClearWaypoint);
             EventHandlers["SharedWaypoint:ReceivePublisher"] += new Action<int, string>(ReceivePublisher);
-            EventHandlers["SharedWaypoint:ForceUnfollow"] += new Action(ForceUnfollow);
+            EventHandlers["SharedWaypoint:ForceUnfollow"] += new Action(Unfollow);
             EventHandlers["SharedWaypoint:Trace"] += new Action<string>(WriteDebug);
         }
 
@@ -74,92 +76,7 @@ namespace SharedWaypointClient {
                 publishing = false;
             }), false);
 
-            MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Right;
-            menu = new Menu("Shared Waypoints", "Status: Not following anyone");
-            MenuController.AddMenu(menu);
-            MenuController.MenuToggleKey = CitizenFX.Core.Control.SelectCharacterMichael; //F5 default
-            MenuCheckboxItem box = new MenuCheckboxItem(
-                                    "Left align menu",
-                                    "Move this menu to the left side of the screen if enabled",
-                                    menu.LeftAligned
-                                    );
-
-            MenuCheckboxItem toggleSub = new MenuCheckboxItem("Share my waypoint", "Share your current waypoint with other players.  Will update whenever you change your waypoint, until disabled", false);
-            menu.AddMenuItem(toggleSub);
-
-            pubsMenu = new Menu("Shared Waypoints", "Choose a player to follow");
-            MenuController.AddSubmenu(menu, pubsMenu);
-            pubsMenuItem = new MenuItem(
-                                "Follow another player's shared waypoint",
-                                "Select this option to see a list of players who are currently sharing their waypoint.  Choose a player to follow their waypoint."
-                                );
-            menu.AddMenuItem(pubsMenuItem);
-            MenuController.BindMenuItem(menu, pubsMenu, pubsMenuItem);
-
-            unsub = new MenuItem("Unfollow", "Select this to stop following a shared waypoint") {
-                Enabled = false
-            };
-            menu.AddMenuItem(unsub);
-            menu.AddMenuItem(box);
-
-            menu.OnCheckboxChange += (_menu, _item, _index, _checked) => {
-                Debug.WriteLine($"OnCheckboxChange: [{_menu}, {_item}, {_index}, {_checked}]");
-                if (_item == box) {
-                    if (_checked) {
-                        MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Left;
-                    }
-                    else {
-                        MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Right;
-                    }
-                }
-                else if (_item == toggleSub) {
-                    if (!publishing) {
-                        var blipenum = GetWaypointBlipEnumId();
-                        var bliphandle = GetFirstBlipInfoId(blipenum);
-                        var blipcoords = GetBlipCoords(bliphandle);
-                        coords = blipcoords;
-                        publishing = true;
-                        _ = WaypointPublisher();
-                        TriggerServerEvent("SharedWaypoint:RegisterPublisher", blipcoords);
-                    }
-                    else {
-                        TriggerServerEvent("SharedWaypoint:UnregisterPublisher");
-                        publishing = false;
-                    }
-                }
-            };
-
-
-            pubsMenu.OnMenuOpen += (_menu) => {
-                pubsMenu.ClearMenuItems();
-                TriggerServerEvent("SharedWaypoint:GetActivePublishers");
-            };
-
-            menu.OnItemSelect += (_menu, _item, _index) => {
-                WriteDebug($"OnItemSelect triggered for _item.Text: {_item.Text}, ItemData: {_item.ItemData} ");
-                if (_item == unsub) {
-                    TriggerServerEvent("SharedWaypoint:Unsubscribe");
-                    ClearWaypoint();
-                    unsub.Enabled = false;
-                    unsub.Description = "Select this to stop following a shared waypoint";
-                    menu.MenuSubtitle = "Status: Not following anyone";
-                    pubsMenuItem.Enabled = true;
-                }
-            };
-
-            pubsMenu.OnItemSelect += (_menu, _item, _index) => {
-                WriteDebug($"OnItemSelect triggered for _item.Text: {_item.Text}, ItemData: {_item.ItemData} ");
-                if (_item.ItemData != null) {
-                    WriteDebug($"Triggering Subscribe event with ItemData:{_item.ItemData}");
-                    TriggerServerEvent("SharedWaypoint:Subscribe", _item.ItemData);
-                    _item.Description = $"You are now following waypoint updates from {_item.Text}";
-                    unsub.Enabled = true;
-                    unsub.Description = $"Select to stop following waypoint updates from {_item.Text}";
-                    menu.MenuSubtitle = $"Following {_item.Text}";
-                    pubsMenuItem.Enabled = false;
-                }
-            };
-
+            MenuInitialize();
         }
 
         private void OnClientResourceStop(string resourceName) {
@@ -216,12 +133,102 @@ namespace SharedWaypointClient {
             pubsMenu.RefreshIndex();
         }
 
-        private void ForceUnfollow() {
+        private void Unfollow() {
             ClearWaypoint();
             pubsMenuItem.Enabled = true;
             unsub.Enabled = false;
             unsub.Description = "Select this to stop following a shared waypoint";
             menu.MenuSubtitle = "Status: Not following anyone";
+        }
+
+        private void Follow(MenuItem item) {
+            TriggerServerEvent("SharedWaypoint:Subscribe", item.ItemData);
+            item.Description = $"You are now following waypoint updates from {item.Text}";
+            unsub.Enabled = true;
+            unsub.Description = $"Select to stop following waypoint updates from {item.Text}";
+            menu.MenuSubtitle = $"Following {item.Text}";
+            pubsMenuItem.Enabled = false;
+        }
+
+        private void MenuInitialize() {
+            //general config
+            MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Right;
+            MenuController.MenuToggleKey = CitizenFX.Core.Control.SelectCharacterMichael; //F5 default
+
+            //main menu & items
+            menu = new Menu("Shared Waypoints", "Status: Not following anyone");
+            togglePub = new MenuCheckboxItem("Share my waypoint", "Share your current waypoint with other players.  Will update whenever you change your waypoint, until disabled", false);
+            pubsMenuItem = new MenuItem("Follow another player's shared waypoint",
+                                        "Select this option to see a list of players who are currently sharing their waypoint.  Choose a player to follow their waypoint.");
+            unsub = new MenuItem("Unfollow", "Select this to stop following a shared waypoint") {
+                    Enabled = false
+            };
+            box = new MenuCheckboxItem("Left align menu",
+                                       "Move this menu to the left side of the screen if enabled",
+                                       menu.LeftAligned);
+            MenuController.AddMenu(menu);
+            menu.AddMenuItem(togglePub);
+            menu.AddMenuItem(pubsMenuItem);
+            menu.AddMenuItem(unsub);
+            menu.AddMenuItem(box);
+
+            //submenu for list of publishers
+            pubsMenu = new Menu("Shared Waypoints", "Choose a player to follow");
+            MenuController.AddSubmenu(menu, pubsMenu);
+            MenuController.BindMenuItem(menu, pubsMenu, pubsMenuItem);
+
+            //event handlers
+            menu.OnCheckboxChange += MainMenu_OnCheckboxChange;
+            menu.OnItemSelect += Menu_OnItemSelect;
+            pubsMenu.OnItemSelect += Menu_OnItemSelect;
+            pubsMenu.OnMenuOpen += (_menu) => { //populate list of publishers when that submenu is opened
+                pubsMenu.ClearMenuItems();
+                TriggerServerEvent("SharedWaypoint:GetActivePublishers");
+                //todo: do this smarter.  maybe stick with this method for a new client opening menu for the first time per session
+                //but then have the client keep the list of publishers cached instead of throwing it away every time
+                //and get the server to trigger clientevents requesting to add/delete publishers from the client side cached list
+                //that should scale a lot better with player count
+            };
+        }
+
+        private void Menu_OnItemSelect(Menu menu, MenuItem item, int index) {
+            WriteDebug($"OnItemSelect triggered for _item.Text: {item.Text}, ItemData: {item.ItemData} ");
+            if (item == unsub) {
+                TriggerServerEvent("SharedWaypoint:Unsubscribe");
+                ClearWaypoint();
+                Unfollow();
+            }
+            if (menu == pubsMenu && item.ItemData != null) {
+                WriteDebug($"Triggering Subscribe event with ItemData:{item.ItemData}");
+                Follow(item);
+            }
+        }
+
+        private void MainMenu_OnCheckboxChange(Menu menu, MenuItem item, int index, bool ischecked) {
+            Debug.WriteLine($"OnCheckboxChange: [{menu}, {item}, {index}, {ischecked}]");
+            if (item == box) {
+                if (ischecked) {
+                    MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Left;
+                }
+                else {
+                    MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Right;
+                }
+            }
+            else if (item == togglePub) {
+                if (!publishing) {
+                    var blipenum = GetWaypointBlipEnumId();
+                    var bliphandle = GetFirstBlipInfoId(blipenum);
+                    var blipcoords = GetBlipCoords(bliphandle);
+                    coords = blipcoords;
+                    publishing = true;
+                    _ = WaypointPublisher();
+                    TriggerServerEvent("SharedWaypoint:RegisterPublisher", blipcoords);
+                }
+                else {
+                    TriggerServerEvent("SharedWaypoint:UnregisterPublisher");
+                    publishing = false;
+                }
+            }
         }
     }
 }
