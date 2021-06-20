@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31321.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedWaypointClient", "SharedWaypointClient\SharedWaypointClient.csproj", "{9CB52B3C-A28E-4C36-9326-871BE49E9304}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedWaypointServer", "SharedWaypointServer\SharedWaypointServer.csproj", "{3D13D4EF-E037-4D0A-A8F1-FC94E2479256}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resource", "resource", "{54CCC732-811F-43C9-B777-A05865E77E84}"
+	ProjectSection(SolutionItems) = preProject
+		fxmanifest.lua = fxmanifest.lua
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9CB52B3C-A28E-4C36-9326-871BE49E9304}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CB52B3C-A28E-4C36-9326-871BE49E9304}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CB52B3C-A28E-4C36-9326-871BE49E9304}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CB52B3C-A28E-4C36-9326-871BE49E9304}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D13D4EF-E037-4D0A-A8F1-FC94E2479256}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D13D4EF-E037-4D0A-A8F1-FC94E2479256}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D13D4EF-E037-4D0A-A8F1-FC94E2479256}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D13D4EF-E037-4D0A-A8F1-FC94E2479256}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {664650BA-4020-4DE4-8BA9-595F60786D7A}
+	EndGlobalSection
+EndGlobal
