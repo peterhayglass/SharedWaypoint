@@ -56,49 +56,6 @@ namespace SharedWaypointClient {
 
         private void OnClientResourceStart(string resourceName) {
             if (GetCurrentResourceName() != resourceName) return;
-
-            RegisterCommand("wplist", new Action<int, List<object>, string>((source, args, raw) => {
-                TriggerServerEvent("SharedWaypoint:GetActivePublishers");
-            }), false);
-
-            RegisterCommand("wpshow", new Action<int, List<object>, string>((source, args, raw) => {
-                var blipenum = GetWaypointBlipEnumId();
-                var bliphandle = GetFirstBlipInfoId(blipenum);
-                var blipcoords = GetBlipCoords(bliphandle);
-                WriteDebug($"GetWaypointBlipEnumId : {blipenum}");
-                WriteDebug($"blip handle (GetFirstBlipInfoId) : {bliphandle} ");
-                WriteDebug($"blip coords (GetBlipCoords) : {blipcoords} ");
-            }), false);
-
-            RegisterCommand("wpreg", new Action<int, List<object>, string>((source, args, raw) => {
-                var blipenum = GetWaypointBlipEnumId();
-                var bliphandle = GetFirstBlipInfoId(blipenum);
-                var blipcoords = GetBlipCoords(bliphandle);
-                coords = blipcoords;
-                publishing = true;
-                _ = WaypointPublisher();
-                TriggerServerEvent("SharedWaypoint:RegisterPublisher", blipcoords);
-            }), false);
-
-            RegisterCommand("wptestpub", new Action<int, List<object>, string>((source, args, raw) => {
-                Vector3 coords = new Vector3(float.Parse((string)args[0]), float.Parse((string)args[1]), float.Parse((string)args[2]));
-                WriteDebug($"wptestpub is triggering SharedWaypoint:Publish with coords {coords}");
-                TriggerServerEvent("SharedWaypoint:Publish", coords);
-            }), false);
-
-            RegisterCommand("wpsub", new Action<int, List<object>, string>((source, args, raw) => {
-                TriggerServerEvent("SharedWaypoint:Subscribe", int.Parse((string)args[0]));
-            }), false);
-
-            RegisterCommand("wpunsub", new Action<int, List<object>, string>((source, args, raw) => {
-                TriggerServerEvent("SharedWaypoint:Unsubscribe");
-            }), false);
-
-            RegisterCommand("wpunreg", new Action<int, List<object>, string>((source, args, raw) => {
-                TriggerServerEvent("SharedWaypoint:UnregisterPublisher");
-                publishing = false;
-            }), false);
-
             MenuInitialize();
         }
 
