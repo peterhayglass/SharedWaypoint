@@ -49,6 +49,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetDir)$(TargetName).dll" "T:\CFXDefault_AF0577.base\resources\SharedWaypoint\$(TargetName).dll"</PostBuildEvent>
+    <PostBuildEvent>copy /Y "$(TargetDir)$(TargetName).dll" "T:\CFXDefault_AF0577.base\resources\SharedWaypoint\$(TargetName).dll"
+copy /Y "$(SolutionDir)fxmanifest.lua" "T:\CFXDefault_AF0577.base\resources\SharedWaypoint\fxmanifest.lua"</PostBuildEvent>
   </PropertyGroup>
 </Project>

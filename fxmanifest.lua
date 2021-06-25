@@ -5,6 +5,9 @@ author 'Peter Hayglass'
 description 'SharedWaypoint'
 version '0.0.1'
 
---scripts
+--scripts & files
+files {
+	'MenuAPI.dll'
+}
 client_script "SharedWaypointClient.net.dll"
 server_script "SharedWaypointServer.net.dll"
