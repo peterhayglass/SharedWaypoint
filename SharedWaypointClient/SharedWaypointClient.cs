@@ -20,7 +20,8 @@ namespace SharedWaypointClient {
         public const string ToggleSharingDescription = "Share your current waypoint with other players.  Will update whenever you change your waypoint, until disabled";
         public const string WaypointsSubmenuItemText = "Follow another player's shared waypoint";
         public const string WaypointsSubmenuItemDescriptionEnabled = "Select this option to see a list of players who are currently sharing their waypoint.  Choose a player to follow their waypoint.";
-        public const string WaypointsSubmenuItemDescriptionDisabled = "You must stop sharing your waypoint before you can follow someone else's shared waypoint.";
+        public const string WaypointsSubmenuItemDescriptionPublishing = "You must stop sharing your waypoint before you can follow someone else's shared waypoint.";
+        public const string WaypointsSubmenuItemDescriptionSubscribed = "You are already following someone's shared waypoint.  You must unfollow them before you can follow someone else's shared waypoint.";
         public const string WaypointPublisherItemDescription = "Select to follow waypoints shared by ";
         public const string UnfollowText = "Unfollow"; 
         public const string UnfollowDescriptionDefault = "Select this to stop following a shared waypoint";
@@ -85,9 +86,9 @@ namespace SharedWaypointClient {
 
         private async Task WaypointPublisher() {
             void PollWaypoint() {
-                var blipenum = GetWaypointBlipEnumId();
-                var bliphandle = GetFirstBlipInfoId(blipenum);
-                var blipcoords = GetBlipCoords(bliphandle);
+                int blipenum = GetWaypointBlipEnumId();
+                int bliphandle = GetFirstBlipInfoId(blipenum);
+                Vector3 blipcoords = GetBlipCoords(bliphandle);
                 if (blipcoords != coords) {
                     TriggerServerEvent("SharedWaypoint:Publish", blipcoords);
                     coords = blipcoords;
@@ -109,10 +110,11 @@ namespace SharedWaypointClient {
 
         private void Unfollow() {
             ClearWaypoint();
-            pubsMenuItem.Enabled = true;
             unsub.Enabled = false;
             unsub.Description = UI.UnfollowDescriptionDefault;
             menu.MenuSubtitle = UI.MainMenuSubtitleDefault;
+            pubsMenuItem.Enabled = true;
+            pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionEnabled;
         }
 
         private void Follow(MenuItem item) {
@@ -122,6 +124,7 @@ namespace SharedWaypointClient {
             unsub.Description = UI.UnfollowDescriptionFollowing + item.Text;
             menu.MenuSubtitle = UI.MainMenuSubtitleFollowing + item.Text;
             pubsMenuItem.Enabled = false;
+            pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionSubscribed;
         }
 
         private void MenuInitialize() {
@@ -185,20 +188,20 @@ namespace SharedWaypointClient {
             }
             else if (item == togglePub) {
                 if (!publishing) {
-                    var blipenum = GetWaypointBlipEnumId();
-                    var bliphandle = GetFirstBlipInfoId(blipenum);
-                    var blipcoords = GetBlipCoords(bliphandle);
+                    int blipenum = GetWaypointBlipEnumId();
+                    int bliphandle = GetFirstBlipInfoId(blipenum);
+                    Vector3 blipcoords = GetBlipCoords(bliphandle);
                     coords = blipcoords;
                     publishing = true;
-                    _ = WaypointPublisher();
                     TriggerServerEvent("SharedWaypoint:RegisterPublisher", blipcoords);
-                    pubsMenuItem.Enabled = false;
-                    pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionDisabled;
+                    _ = WaypointPublisher();
+                    //pubsMenuItem.Enabled = false;
+                    pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionPublishing;
                 }
                 else {
                     TriggerServerEvent("SharedWaypoint:UnregisterPublisher");
                     publishing = false;
-                    pubsMenuItem.Enabled = true;
+                    //pubsMenuItem.Enabled = true;
                     pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionEnabled;
                 }
             }
