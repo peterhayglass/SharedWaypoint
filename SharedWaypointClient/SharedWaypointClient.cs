@@ -97,7 +97,7 @@ namespace SharedWaypointClient {
             WriteDebug("WaypointPublisher started");
             while (publishing) {
                 PollWaypoint();
-                await Delay(500); //todo: cancellation token
+                await Delay(500); 
             }
             WriteDebug("WaypointPublisher concluded");
         }
@@ -125,6 +125,25 @@ namespace SharedWaypointClient {
             menu.MenuSubtitle = UI.MainMenuSubtitleFollowing + item.Text;
             pubsMenuItem.Enabled = false;
             pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionSubscribed;
+        }
+
+        private void StartPublishing() {
+            int blipEnum = GetWaypointBlipEnumId();
+            int blipHandle = GetFirstBlipInfoId(blipEnum);
+            Vector3 blipCoords = GetBlipCoords(blipHandle);
+            coords = blipCoords;
+            publishing = true;
+            TriggerServerEvent("SharedWaypoint:RegisterPublisher", blipCoords);
+            _ = WaypointPublisher();
+            //pubsMenuItem.Enabled = false;
+            pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionPublishing;
+        }
+
+        private void StopPublishing() {
+            TriggerServerEvent("SharedWaypoint:UnregisterPublisher");
+            publishing = false;
+            //pubsMenuItem.Enabled = true;
+            pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionEnabled;
         }
 
         private void MenuInitialize() {
@@ -188,21 +207,10 @@ namespace SharedWaypointClient {
             }
             else if (item == togglePub) {
                 if (!publishing) {
-                    int blipEnum = GetWaypointBlipEnumId();
-                    int blipHandle = GetFirstBlipInfoId(blipEnum);
-                    Vector3 blipCoords = GetBlipCoords(blipHandle);
-                    coords = blipCoords;
-                    publishing = true;
-                    TriggerServerEvent("SharedWaypoint:RegisterPublisher", blipCoords);
-                    _ = WaypointPublisher();
-                    //pubsMenuItem.Enabled = false;
-                    pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionPublishing;
+                    StartPublishing();
                 }
                 else {
-                    TriggerServerEvent("SharedWaypoint:UnregisterPublisher");
-                    publishing = false;
-                    //pubsMenuItem.Enabled = true;
-                    pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionEnabled;
+                    StopPublishing();
                 }
             }
         }

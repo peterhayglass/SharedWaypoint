@@ -20,7 +20,7 @@ namespace SharedWaypointServer {
     }
     public class SharedWaypointServer : BaseScript {
 
-        private Dictionary<int, PublisherInfo> publishers = new Dictionary<int, PublisherInfo>();
+        private Dictionary<int, PublisherInfo> publishers = new Dictionary<int, PublisherInfo>(); //key is a publishers Player hash, value is their PublisherInfo
         private Dictionary<Player, Player> subscriptions = new Dictionary<Player, Player>(); //key is a subscriber, value is the publisher they are subscribed to
 
         public SharedWaypointServer() {
