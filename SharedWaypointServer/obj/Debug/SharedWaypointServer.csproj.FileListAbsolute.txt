@@ -1,8 +1,0 @@
-C:\Users\Peter\source\repos\SharedWaypoint\SharedWaypointServer\bin\Debug\SharedWaypointServer.net.dll
-C:\Users\Peter\source\repos\SharedWaypoint\SharedWaypointServer\bin\Debug\SharedWaypointServer.net.pdb
-C:\Users\Peter\source\repos\SharedWaypoint\SharedWaypointServer\bin\Debug\CitizenFX.Core.dll
-C:\Users\Peter\source\repos\SharedWaypoint\SharedWaypointServer\obj\Debug\SharedWaypointServer.csproj.AssemblyReference.cache
-C:\Users\Peter\source\repos\SharedWaypoint\SharedWaypointServer\obj\Debug\SharedWaypointServer.csproj.CoreCompileInputs.cache
-C:\Users\Peter\source\repos\SharedWaypoint\SharedWaypointServer\obj\Debug\SharedWaypointServer.csproj.CopyComplete
-C:\Users\Peter\source\repos\SharedWaypoint\SharedWaypointServer\obj\Debug\SharedWaypointServer.net.dll
-C:\Users\Peter\source\repos\SharedWaypoint\SharedWaypointServer\obj\Debug\SharedWaypointServer.net.pdb
