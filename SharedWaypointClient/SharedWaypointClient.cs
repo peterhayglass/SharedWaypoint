@@ -86,12 +86,12 @@ namespace SharedWaypointClient {
 
         private async Task WaypointPublisher() {
             void PollWaypoint() {
-                int blipenum = GetWaypointBlipEnumId();
-                int bliphandle = GetFirstBlipInfoId(blipenum);
-                Vector3 blipcoords = GetBlipCoords(bliphandle);
-                if (blipcoords != coords) {
-                    TriggerServerEvent("SharedWaypoint:Publish", blipcoords);
-                    coords = blipcoords;
+                int blipEnum = GetWaypointBlipEnumId();
+                int blipHandle = GetFirstBlipInfoId(blipEnum);
+                Vector3 blipCoords = GetBlipCoords(blipHandle);
+                if (blipCoords != coords) {
+                    TriggerServerEvent("SharedWaypoint:Publish", blipCoords);
+                    coords = blipCoords;
                 }
             }
             WriteDebug("WaypointPublisher started");
@@ -188,12 +188,12 @@ namespace SharedWaypointClient {
             }
             else if (item == togglePub) {
                 if (!publishing) {
-                    int blipenum = GetWaypointBlipEnumId();
-                    int bliphandle = GetFirstBlipInfoId(blipenum);
-                    Vector3 blipcoords = GetBlipCoords(bliphandle);
-                    coords = blipcoords;
+                    int blipEnum = GetWaypointBlipEnumId();
+                    int blipHandle = GetFirstBlipInfoId(blipEnum);
+                    Vector3 blipCoords = GetBlipCoords(blipHandle);
+                    coords = blipCoords;
                     publishing = true;
-                    TriggerServerEvent("SharedWaypoint:RegisterPublisher", blipcoords);
+                    TriggerServerEvent("SharedWaypoint:RegisterPublisher", blipCoords);
                     _ = WaypointPublisher();
                     //pubsMenuItem.Enabled = false;
                     pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionPublishing;
