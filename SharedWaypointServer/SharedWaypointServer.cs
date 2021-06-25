@@ -9,29 +9,20 @@ using static CitizenFX.Core.Native.API;
 namespace SharedWaypointServer {
     
     public class PublisherInfo {
-        public PublisherInfo(Vector3 coords) {
+        public PublisherInfo(Player publisher, Vector3 coords) {
             this.coords = coords;
             this.subscribers = new List<Player>();
+            this.publisher = publisher;
         }
         public Vector3 coords { get; set; }
         public List<Player> subscribers;
+        public Player publisher { get; }
     }
     public class SharedWaypointServer : BaseScript {
 
-        private Dictionary<Player, PublisherInfo> Publishers = new Dictionary<Player, PublisherInfo>();
-        private Dictionary<int, Player> PublisherRefs = new Dictionary<int, Player>();
-        private Dictionary<Player, Player> Subscriptions = new Dictionary<Player, Player>(); //key is subscriber, value is publisher
+        private Dictionary<int, PublisherInfo> Publishers = new Dictionary<int, PublisherInfo>();
+        private Dictionary<Player, Player> Subscriptions = new Dictionary<Player, Player>(); //key is a subscriber, value is the publisher they are subscribed to
 
-        /*
-         * can probably just remove this?  it was for CLI testing.  have since switched to GUI
-        private void PrintToClientChat(Player player, string message) { 
-            //print a chat message on the client side for a specific player
-            TriggerClientEvent(player, "chat:addMessage", new {
-                color = new[] { 255, 0, 0 },
-                args = new[] { "[SharedWaypointClient]", message }
-            });
-        }
-        */
         public SharedWaypointServer() {
             EventHandlers["SharedWaypoint:RegisterPublisher"] += new Action<Player, Vector3>(RegisterPublisher);
             EventHandlers["SharedWaypoint:Publish"] += new Action<Player, Vector3>(Publish);
@@ -47,26 +38,24 @@ namespace SharedWaypointServer {
         }
 
         private void RegisterPublisher([FromSource] Player source, Vector3 coords) {
-            if (Publishers.ContainsKey(source)) {
-                Publishers[source].coords = coords;
-                ClientTrace(source, $"You triggered RegisterPublisher to update with the coords: {coords}");
+            if (Publishers.ContainsKey(source.GetHashCode())) {
+                ClientTrace(source, "You triggered RegisterPublisher when you are already publishing");
             }
             else {
-                PublisherInfo info = new PublisherInfo(coords);
-                Publishers.Add(source, info);
-                PublisherRefs[source.GetHashCode()] = source;
+                PublisherInfo info = new PublisherInfo(source, coords);
+                Publishers.Add(source.GetHashCode(), info);
                 ClientTrace(source, $"You triggered RegisterPublisher with the coords: {coords}");
             }
         }
 
         private void Publish([FromSource] Player source, Vector3 coords) {
-            if (!Publishers.ContainsKey(source)) {
+            if (!Publishers.ContainsKey(source.GetHashCode())) {
                 ClientTrace(source, $"Publish triggered from invalid source player {source.Name} with coords {coords}, this player is not a registered publisher");
                 return;
             }
-            Publishers[source].coords = coords;
+            Publishers[source.GetHashCode()].coords = coords;
 
-            foreach (Player subscriber in Publishers[source].subscribers) {
+            foreach (Player subscriber in Publishers[source.GetHashCode()].subscribers) {
                 if (coords == new Vector3(0, 0, 0)) {
                     TriggerClientEvent(subscriber, "SharedWaypoint:ClearWaypoint", coords);
                 }
@@ -78,48 +67,40 @@ namespace SharedWaypointServer {
         }
 
         private void UnregisterPublisher([FromSource] Player source) {
-            if (!Publishers.ContainsKey(source)) {
+            if (!Publishers.ContainsKey(source.GetHashCode())) {
                 ClientTrace(source, $"UnregisterPublisher triggered from invalid source, {source.Name} is not a registered publisher");
                 return;
             }
 
-            foreach (Player subscriber in Publishers[source].subscribers) {
+            foreach (Player subscriber in Publishers[source.GetHashCode()].subscribers) {
                 TriggerClientEvent(subscriber, "SharedWaypoint:ForceUnfollow");
             }
             
-            Publishers.Remove(source);
-            PublisherRefs.Remove(source.GetHashCode());
+            Publishers.Remove(source.GetHashCode());
             ClientTrace(source, $"UnregisterPublisher has removed {source.Name} from the publishers list");
         }
 
         private void GetActivePublishers([FromSource] Player source) {
-            /* left over from early CLI version, PublisherRefs was a list, should probably just delete this
-             * for(int i=0; i < PublisherRefs.Count; i++) {
-                Player player = PublisherRefs[i];
-                _msg(source, $"[{i}] {player.Name} is publishing waypoints.");
-                //_chatmsg(source, $"The publisher {player.Name} has {Publishers[player].subscribers.Count} subscribers");
-            }*/
-            foreach(Player player in Publishers.Keys) {
-                TriggerClientEvent(source, "SharedWaypoint:ReceivePublisher", player.GetHashCode(), player.Name);
+            foreach(int playerHash in Publishers.Keys) {
+                TriggerClientEvent(source, "SharedWaypoint:ReceivePublisher", playerHash, Publishers[playerHash].publisher.Name);
             }   
         }
 
         private void Subscribe([FromSource] Player source, int publisherId) {
-            Player publisher = PublisherRefs[publisherId];
-            if (Publishers[publisher].subscribers.Contains(source)) {
-                ClientTrace(source, $"Subscribe event triggered unnecessarily, {source.Name} is already subscribed to {publisher.Name}");
+            if (Publishers[publisherId].subscribers.Contains(source)) {
+                ClientTrace(source, $"Subscribe event triggered unnecessarily, {source.Name} is already subscribed to {Publishers[publisherId].publisher.Name}");
                 return;
             }
-            Publishers[publisher].subscribers.Add(source);
-            Subscriptions[source] = publisher;
-            if (Publishers[publisher].coords != new Vector3(0, 0, 0)) {
-                TriggerClientEvent(source, "SharedWaypoint:SetWaypoint", Publishers[publisher].coords);
+            Publishers[publisherId].subscribers.Add(source);
+            Subscriptions[source] = Publishers[publisherId].publisher;
+            if (Publishers[publisherId].coords != new Vector3(0, 0, 0)) {
+                TriggerClientEvent(source, "SharedWaypoint:SetWaypoint", Publishers[publisherId].coords);
             }
         }
 
         private void Unsubscribe([FromSource] Player source) {
             Player publisher = Subscriptions[source];
-            Publishers[publisher].subscribers.Remove(source);
+            Publishers[publisher.GetHashCode()].subscribers.Remove(source);
             Subscriptions[source] = null;
             ClientTrace(source, $"Unsubscribing {source.Name} from {publisher.Name}");
         }
