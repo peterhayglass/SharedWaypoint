@@ -22,6 +22,7 @@ namespace SharedWaypointServer {
 
         private Dictionary<int, PublisherInfo> publishers = new Dictionary<int, PublisherInfo>(); //key is a publishers Player hash, value is their PublisherInfo
         private Dictionary<Player, Player> subscriptions = new Dictionary<Player, Player>(); //key is a subscriber, value is the publisher they are subscribed to
+        private List<Player> players = new List<Player>(); 
 
         public SharedWaypointServer() {
             EventHandlers["SharedWaypoint:RegisterPublisher"] += new Action<Player, Vector3>(RegisterPublisher);
@@ -44,6 +45,9 @@ namespace SharedWaypointServer {
             else {
                 PublisherInfo info = new PublisherInfo(source, coords);
                 publishers.Add(source.GetHashCode(), info);
+                foreach (Player player in players) {
+                    TriggerClientEvent(player, "SharedWaypoint:ReceivePublisher", source.GetHashCode(), source.Name);
+                }
                 ClientTrace(source, $"You triggered RegisterPublisher with the coords: {coords}");
             }
         }
@@ -71,17 +75,21 @@ namespace SharedWaypointServer {
                 ClientTrace(source, $"UnregisterPublisher triggered from invalid source, {source.Name} is not a registered publisher");
                 return;
             }
-
             foreach (Player subscriber in publishers[source.GetHashCode()].Subscribers) {
                 TriggerClientEvent(subscriber, "SharedWaypoint:ForceUnfollow");
             }
-            
+            foreach (Player player in players) {
+                TriggerClientEvent(player, "SharedWaypoint:RemovePublisher", source.GetHashCode());
+            }
             publishers.Remove(source.GetHashCode());
             ClientTrace(source, $"UnregisterPublisher has removed {source.Name} from the publishers list");
         }
 
         private void GetActivePublishers([FromSource] Player source) {
-            foreach(int playerHash in publishers.Keys) {
+            if (!players.Contains(source)) {
+                players.Add(source);
+            }
+            foreach (int playerHash in publishers.Keys) {
                 TriggerClientEvent(source, "SharedWaypoint:ReceivePublisher", playerHash, publishers[playerHash].Publisher.Name);
             }   
         }

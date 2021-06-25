@@ -33,7 +33,8 @@ namespace SharedWaypointClient {
     public class SharedWaypointClient : BaseScript {
         private int blip;
         private Vector3 coords;
-        private bool publishing;
+        private bool publishing = false;
+        private bool gotPublishers = false;
         private Menu pubsMenu;
         private Menu menu;
         private MenuItem unsub;
@@ -47,6 +48,7 @@ namespace SharedWaypointClient {
             EventHandlers["SharedWaypoint:SetWaypoint"] += new Action<Vector3>(SetWaypoint);
             EventHandlers["SharedWaypoint:ClearWaypoint"] += new Action(ClearWaypoint);
             EventHandlers["SharedWaypoint:ReceivePublisher"] += new Action<int, string>(ReceivePublisher);
+            EventHandlers["SharedWaypoint:RemovePublisher"] += new Action<int>(RemovePublisher);
             EventHandlers["SharedWaypoint:ForceUnfollow"] += new Action(Unfollow);
             EventHandlers["SharedWaypoint:Trace"] += new Action<string>(WriteDebug);
         }
@@ -102,10 +104,21 @@ namespace SharedWaypointClient {
             WriteDebug("WaypointPublisher concluded");
         }
 
-        private void ReceivePublisher(int pubID, string name) {
-            MenuItem newitem = new MenuItem(name, UI.WaypointPublisherItemDescription + name) { ItemData = pubID };
+        private void ReceivePublisher(int publisherId, string name) {
+            WriteDebug("ReceivePublisher triggered");
+            MenuItem newitem = new MenuItem(name, UI.WaypointPublisherItemDescription + name) { ItemData = publisherId };
             pubsMenu.AddMenuItem(newitem);
             pubsMenu.RefreshIndex();
+        }
+
+        private void RemovePublisher(int publisherId) {
+            WriteDebug("RemovePublisher triggered");
+            foreach (MenuItem item in pubsMenu.GetMenuItems()) {
+                if (item.ItemData == publisherId) {
+                    pubsMenu.RemoveMenuItem(item);
+                    return;
+                }
+            }
         }
 
         private void Unfollow() {
@@ -172,16 +185,15 @@ namespace SharedWaypointClient {
             menu.OnCheckboxChange += MainMenu_OnCheckboxChange;
             menu.OnItemSelect += Menu_OnItemSelect;
             pubsMenu.OnItemSelect += Menu_OnItemSelect;
-            pubsMenu.OnMenuOpen += (_menu) => { //populate list of publishers when that submenu is opened
-                pubsMenu.ClearMenuItems();
-                TriggerServerEvent("SharedWaypoint:GetActivePublishers");
-                //todo: do this smarter.  maybe stick with this method for a new client opening menu for the first time per session
-                //but then have the client keep the list of publishers cached instead of throwing it away every time
-                //and get the server to trigger clientevents requesting to add/delete publishers from the client side cached list
-                //that should scale a lot better with player count
-            };
+            pubsMenu.OnMenuOpen += PubsMenu_OnMenuOpen;
         }
 
+        private void PubsMenu_OnMenuOpen(Menu menu) {
+            if (!gotPublishers) {
+                TriggerServerEvent("SharedWaypoint:GetActivePublishers");
+                gotPublishers = true;
+            }
+        }
         private void Menu_OnItemSelect(Menu menu, MenuItem item, int index) {
             WriteDebug($"OnItemSelect triggered for _item.Text: {item.Text}, ItemData: {item.ItemData} ");
             if (item == unsub) {
