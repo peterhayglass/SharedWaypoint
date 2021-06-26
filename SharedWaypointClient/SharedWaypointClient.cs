@@ -13,9 +13,11 @@ namespace SharedWaypointClient {
     public static class UI {
         public const string MainMenuTitle = "Shared Waypoints";
         public const string WaypointsSubmenuTitle = "Shared Waypoints";
-        public const string MainMenuSubtitleDefault = "Status: Not following anyone";
-        public const string MainMenuSubtitleFollowing = "Following ";
-        public const string WaypointsSubmenuSubtitle = "Choose a player to follow";
+        public const string MainMenuSubtitleDefault = "Status: Not following or sharing";
+        public const string MainMenuSubtitleFollowing = "Status: Following ";
+        public const string MainMenuSubtitlePublishing = "Status: Sharing waypoints. ";
+        public const string WaypointsSubmenuSubtitleDefault = "Nobody is sharing waypoints right now";
+        public const string WaypointsSubmenuSubtitleAvailable = "Choose a player to follow";
         public const string ToggleSharingText = "Share my waypoint";
         public const string ToggleSharingDescription = "Share your current waypoint with other players.  Will update whenever you change your waypoint, until disabled";
         public const string WaypointsSubmenuItemText = "Follow another player's shared waypoint";
@@ -108,7 +110,9 @@ namespace SharedWaypointClient {
             WriteDebug("ReceivePublisher triggered");
             MenuItem newitem = new MenuItem(name, UI.WaypointPublisherItemDescription + name) { ItemData = publisherId };
             pubsMenu.AddMenuItem(newitem);
-            pubsMenu.RefreshIndex();
+            if (pubsMenu.MenuSubtitle != UI.WaypointsSubmenuSubtitleAvailable) {
+                pubsMenu.MenuSubtitle = UI.WaypointsSubmenuSubtitleAvailable;
+            }
         }
 
         private void RemovePublisher(int publisherId) {
@@ -116,8 +120,11 @@ namespace SharedWaypointClient {
             foreach (MenuItem item in pubsMenu.GetMenuItems()) {
                 if (item.ItemData == publisherId) {
                     pubsMenu.RemoveMenuItem(item);
-                    return;
+                    break;
                 }
+            }
+            if (pubsMenu.GetMenuItems().Count == 0) {
+                pubsMenu.MenuSubtitle = UI.WaypointsSubmenuSubtitleDefault;
             }
         }
 
@@ -150,6 +157,7 @@ namespace SharedWaypointClient {
             _ = WaypointPublisher();
             //pubsMenuItem.Enabled = false;
             pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionPublishing;
+            menu.MenuSubtitle = UI.MainMenuSubtitlePublishing;
         }
 
         private void StopPublishing() {
@@ -157,6 +165,7 @@ namespace SharedWaypointClient {
             publishing = false;
             //pubsMenuItem.Enabled = true;
             pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionEnabled;
+            menu.MenuSubtitle = UI.MainMenuSubtitleDefault;
         }
 
         private void MenuInitialize() {
@@ -177,7 +186,7 @@ namespace SharedWaypointClient {
             menu.AddMenuItem(box);
 
             //submenu for list of publishers
-            pubsMenu = new Menu(UI.WaypointsSubmenuTitle, UI.WaypointsSubmenuSubtitle);
+            pubsMenu = new Menu(UI.WaypointsSubmenuTitle, UI.WaypointsSubmenuSubtitleDefault);
             MenuController.AddSubmenu(menu, pubsMenu);
             MenuController.BindMenuItem(menu, pubsMenu, pubsMenuItem);
 
