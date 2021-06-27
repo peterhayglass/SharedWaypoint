@@ -15,7 +15,7 @@ namespace SharedWaypointClient {
         public const string WaypointsSubmenuTitle = "Shared Waypoints";
         public const string MainMenuSubtitleDefault = "Status: Not following or sharing";
         public const string MainMenuSubtitleFollowing = "Status: Following ";
-        public const string MainMenuSubtitlePublishing = "Status: Sharing waypoints. ";
+        public const string MainMenuSubtitlePublishing = "Status: Sharing waypoints. Followers: ";
         public const string WaypointsSubmenuSubtitleDefault = "Nobody is sharing waypoints right now";
         public const string WaypointsSubmenuSubtitleAvailable = "Choose a player to follow";
         public const string ToggleSharingText = "Share my waypoint";
@@ -36,6 +36,7 @@ namespace SharedWaypointClient {
         private int blip;
         private Vector3 coords;
         private bool publishing = false;
+        private int followerCount = 0;
         private bool gotPublishers = false;
         private Menu pubsMenu;
         private Menu menu;
@@ -53,6 +54,7 @@ namespace SharedWaypointClient {
             EventHandlers["SharedWaypoint:RemovePublisher"] += new Action<int>(RemovePublisher);
             EventHandlers["SharedWaypoint:ForceUnfollow"] += new Action(Unfollow);
             EventHandlers["SharedWaypoint:Trace"] += new Action<string>(WriteDebug);
+            EventHandlers["SharedWaypoint:UpdateFollowerCount"] += new Action<int>(UpdateFollowerCount);
         }
 
         private void WriteDebug(string message) {
@@ -147,6 +149,11 @@ namespace SharedWaypointClient {
             pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionSubscribed;
         }
 
+        private void UpdateFollowerCount(int count) {
+            followerCount = count;
+            menu.MenuSubtitle = UI.MainMenuSubtitlePublishing + followerCount;
+        }
+
         private void StartPublishing() {
             int blipEnum = GetWaypointBlipEnumId();
             int blipHandle = GetFirstBlipInfoId(blipEnum);
@@ -157,12 +164,13 @@ namespace SharedWaypointClient {
             _ = WaypointPublisher();
             //pubsMenuItem.Enabled = false;
             pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionPublishing;
-            menu.MenuSubtitle = UI.MainMenuSubtitlePublishing;
+            menu.MenuSubtitle = UI.MainMenuSubtitlePublishing + followerCount;
         }
 
         private void StopPublishing() {
             TriggerServerEvent("SharedWaypoint:UnregisterPublisher");
             publishing = false;
+            followerCount = 0;
             //pubsMenuItem.Enabled = true;
             pubsMenuItem.Description = UI.WaypointsSubmenuItemDescriptionEnabled;
             menu.MenuSubtitle = UI.MainMenuSubtitleDefault;
@@ -221,16 +229,14 @@ namespace SharedWaypointClient {
             if (item == box) {
                 if (ischecked) {
                     MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Left;
-                }
-                else {
+                } else {
                     MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Right;
                 }
             }
             else if (item == togglePub) {
                 if (!publishing) {
                     StartPublishing();
-                }
-                else {
+                } else {
                     StopPublishing();
                 }
             }

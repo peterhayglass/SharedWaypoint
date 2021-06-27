@@ -104,6 +104,7 @@ namespace SharedWaypointServer {
             if (publishers[publisherId].Coords != new Vector3(0, 0, 0)) {
                 TriggerClientEvent(source, "SharedWaypoint:SetWaypoint", publishers[publisherId].Coords);
             }
+            TriggerClientEvent(publishers[publisherId].Publisher, "SharedWaypoint:UpdateFollowerCount", publishers[publisherId].Subscribers.Count);
         }
 
         private void Unsubscribe([FromSource] Player source) {
