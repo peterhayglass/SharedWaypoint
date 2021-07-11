@@ -32,6 +32,18 @@ namespace SharedWaypointServer {
             EventHandlers["SharedWaypoint:GetActivePublishers"] += new Action<Player>(GetActivePublishers);
             EventHandlers["SharedWaypoint:Subscribe"] += new Action<Player, int>(Subscribe);
             EventHandlers["SharedWaypoint:Unsubscribe"] += new Action<Player>(Unsubscribe);
+            
+            EventHandlers["playerDropped"] += new Action<Player, string>(OnPlayerDropped);
+        }
+        
+        private void OnPlayerDropped([FromSource] Player source, string reason) {
+            Debug.WriteLine($"playerDropped event handled for Player: {source.Name}.  Reason: {reason}");
+            if (publishers.ContainsKey(source.GetHashCode())) {
+                UnregisterPublisher(source);
+            }
+            if (subscriptions.ContainsKey(source)) {
+                Unsubscribe(source);
+            }
         }
 
         private void ClientTrace(Player player, string message) {
@@ -72,7 +84,7 @@ namespace SharedWaypointServer {
 
         private void UnregisterPublisher([FromSource] Player source) {
             if (!publishers.ContainsKey(source.GetHashCode())) {
-                ClientTrace(source, $"UnregisterPublisher triggered from invalid source, {source.Name} is not a registered publisher");
+                Debug.WriteLine($"UnregisterPublisher triggered for invalid source, {source.Name} is not a registered publisher");
                 return;
             }
             foreach (Player subscriber in publishers[source.GetHashCode()].Subscribers) {
@@ -82,7 +94,7 @@ namespace SharedWaypointServer {
                 TriggerClientEvent(player, "SharedWaypoint:RemovePublisher", source.GetHashCode());
             }
             publishers.Remove(source.GetHashCode());
-            ClientTrace(source, $"UnregisterPublisher has removed {source.Name} from the publishers list");
+            Debug.WriteLine($"UnregisterPublisher has removed {source.Name} from the publishers list");
         }
 
         private void GetActivePublishers([FromSource] Player source) {
@@ -108,10 +120,19 @@ namespace SharedWaypointServer {
         }
 
         private void Unsubscribe([FromSource] Player source) {
+            if (!subscriptions.ContainsKey(source)) {
+                Debug.WriteLine($"Unsubscribe invoked for subscriber {source.Name} who has no active subscription, doing nothing");
+                return;
+            }
             Player publisher = subscriptions[source];
+            subscriptions.Remove(source);
+            Debug.WriteLine($"Unsubscribe: removed {source.Name} from subscriptions list");
+            if (!publishers.ContainsKey(publisher.GetHashCode())) {
+                Debug.WriteLine($"Unsubscribe invoked for subscriber {source.Name} but their publisher {publisher.Name} is no longer publishing");
+                return;
+            }
             publishers[publisher.GetHashCode()].Subscribers.Remove(source);
-            subscriptions[source] = null;
-            ClientTrace(source, $"Unsubscribing {source.Name} from {publisher.Name}");
+            Debug.WriteLine($"Unsubscribe: removed {source.Name} from the subscriber list for {publisher.Name}");
         }
     }
 }
